@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Face Scan Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js" defer></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .container {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+        #video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 100%; /* 1:1 Aspect Ratio */
+            border-radius: 50%;
+            overflow: hidden;
+            border: 5px solid #334155;
+            margin-bottom: 1.5rem;
+            background: #1e293b;
+        }
+        video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: translate(-50%, -50%) scaleX(-1);
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #status {
+            font-size: 1rem;
+            font-weight: 500;
+            min-height: 1.5rem;
+            transition: color 0.3s ease;
+        }
+        .status-loading { color: #f59e0b; }
+        .status-scanning { color: #60a5fa; }
+        .status-success { color: #4ade80; }
+        .status-error { color: #f87171; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Admin Face Scan</h1>
+        <div id="video-wrapper">
+            <video id="video" autoplay muted playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
+        <p id="status" class="status-loading">Starting camera...</p>
+    </div>
+
+    <script>
+        // ========================================================================
+        // CONFIGURATION
+        // ========================================================================
+
+        // 1. SET YOUR APPS SCRIPT URL (This is your deployment URL)
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnZV5fgAwvVP-PiUZrkElJJPAYXFF5r2m2dLXgEn8-Yc6CxV9NbnSUGXRul7cZ66DAFQ/exec';
+
+        // 2. SET YOUR MODEL URL (From GitHub Pages - Step 2)
+        // !! IMPORTANT: REPLACE THIS with your GitHub Pages URL !!
+        const MODEL_URL = 'https://github.com/davidthegang/FaceScan_DI/tree/main/weights';
+
+        // 3. SET RECOGNITION THRESHOLD
+        const FACE_MATCH_THRESHOLD = 0.4;
+
+        // ========================================================================
+
+        const video = document.getElementById('video');
+        const statusEl = document.getElementById('status');
+        let faceMatcher;
+        let loginInterval;
+
+        // 1. Load all face-api.js models
+        async function loadModels() {
+            statusEl.textContent = 'Loading AI models...';
+            try {
+                await Promise.all([
+                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                ]);
+            } catch (e) {
+                console.error("Error loading models", e);
+                statusEl.textContent = 'Error loading models. Check MODEL_URL.';
+                statusEl.className = 'status-error';
+            }
+        }
+
+        // 2. Start the webcam
+        async function startVideo() {
+            statusEl.textContent = 'Requesting camera access...';
+            statusEl.className = 'status-loading';
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Camera Error: ", err);
+                statusEl.textContent = 'Camera access denied. Please allow camera.';
+                statusEl.className = 'status-error';
+            }
+        }
+
+        // 3. Fetch admin image URLs from Google Sheet
+        async function loadLabeledImages() {
+            statusEl.textContent = 'Loading admin faces...';
+            statusEl.className = 'status-loading';
+            try {
+                // We add the 'action' as a query parameter
+                const response = await fetch(`${SCRIPT_URL}?action=getAdminImages`);
+                const data = await response.json();
+
+                if (data.status !== 'success') {
+                    throw new Error(data.message);
+                }
+                
+                if (data.urls.length === 0) {
+                     throw new Error('No admin face URLs found in sheet.');
+                }
+
+                const labeledFaceDescriptors = await Promise.all(
+                    data.urls.map(async (url) => {
+                        try {
+                            const img = await faceapi.fetchImage(url);
+                            const detections = await faceapi.detectSingleFace(img)
+                                .withFaceLandmarks()
+                                .withFaceDescriptor();
+                            
+                            if (!detections) {
+                                console.warn(`No face found in admin image: ${url}`);
+                                return null;
+                            }
+                            return new faceapi.LabeledFaceDescriptors('admin', [detections.descriptor]);
+                        } catch (e) {
+                            console.error(`Error loading image ${url}:`, e);
+                            statusEl.textContent = `Error loading an admin image. Check sheet URLs.`;
+                            statusEl.className = 'status-error';
+                            return null;
+                        }
+                    })
+                );
+                
+                const validDescriptors = labeledFaceDescriptors.filter(d => d);
+                if(validDescriptors.length === 0) {
+                    throw new Error('Could not load any valid admin faces.');
+                }
+
+                return new faceapi.FaceMatcher(validDescriptors, FACE_MATCH_THRESHOLD);
+
+            } catch (e) {
+                console.error("Error loading labeled images: ", e);
+                statusEl.textContent = `Error: ${e.message}`;
+                statusEl.className = 'status-error';
+                return null;
+            }
+        }
+
+        // 4. This function runs when the video starts playing
+        video.onplay = async () => {
+            faceMatcher = await loadLabeledImages();
+            if (!faceMatcher) {
+                statusEl.textContent = 'Login system failed to start.';
+                statusEl.className = 'status-error';
+                return;
+            }
+
+            statusEl.textContent = 'Ready. Please look at the camera.';
+            statusEl.className = 'status-scanning';
+
+            loginInterval = setInterval(async () => {
+                const detections = await faceapi.detectAllFaces(video)
+                    .withFaceLandmarks()
+                    .withFaceDescriptors();
+
+                if (detections.length === 0) {
+                    return; // No face found, keep scanning
+                }
+
+                const bestMatch = faceMatcher.findBestMatch(detections[0].descriptor);
+
+                if (bestMatch.label === 'admin') {
+                    // SUCCESS!
+                    clearInterval(loginInterval);
+                    video.srcObject.getTracks().forEach(track => track.stop()); // Stop camera
+                    
+                    statusEl.textContent = 'Login Successful! Redirecting...';
+                    statusEl.className = 'status-success';
+                    
+                    // =============================================================
+                    // !! MODIFIED REDIRECT !!
+                    // This gets your web app URL and adds '?page=app' to load the main application
+                    // =============================================================
+                    const appUrl = SCRIPT_URL.replace(/(\/exec)(.*)/, "$1") + "?page=app";
+                    window.location.href = appUrl;
+                } else {
+                    statusEl.textContent = 'Access Denied: Unknown User';
+                    statusEl.className = 'status-error';
+                }
+            }, 1000); // Scan every 1 second
+        };
+
+        // Run everything
+        async function init() {
+            await loadModels();
+            await startVideo();
+        }
+        
+        init();
+    </script>
+</body>
+</html>

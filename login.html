@@ -90,12 +90,14 @@
         // 1. SET YOUR APPS SCRIPT URL (This is your deployment URL)
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnZV5fgAwvVP-PiUZrkElJJPAYXFF5r2m2dLXgEn8-Yc6CxV9NbnSUGXRul7cZ66DAFQ/exec';
 
-        // 2. SET YOUR MODEL URL (From GitHub Pages - Step 2)
-        // !! IMPORTANT: REPLACE THIS with your GitHub Pages URL !!
-        const MODEL_URL = 'https://github.com/davidthegang/FaceScan_DI/tree/main/weights';
+        // 2. SET YOUR MODEL URL (CORRECTED for your GitHub repo)
+        const MODEL_URL = 'https://davidthegang.github.io/FaceScan_DI/weights';
 
         // 3. SET RECOGNITION THRESHOLD
         const FACE_MATCH_THRESHOLD = 0.4;
+        
+        // 4. SET MAIN APP FILENAME (The file to open after login)
+        const MAIN_APP_FILE = 'app.html';
 
         // ========================================================================
 
@@ -139,7 +141,6 @@
             statusEl.textContent = 'Loading admin faces...';
             statusEl.className = 'status-loading';
             try {
-                // We add the 'action' as a query parameter
                 const response = await fetch(`${SCRIPT_URL}?action=getAdminImages`);
                 const data = await response.json();
 
@@ -219,12 +220,10 @@
                     statusEl.textContent = 'Login Successful! Redirecting...';
                     statusEl.className = 'status-success';
                     
-                    // =============================================================
-                    // !! MODIFIED REDIRECT !!
-                    // This gets your web app URL and adds '?page=app' to load the main application
-                    // =============================================================
-                    const appUrl = SCRIPT_URL.replace(/(\/exec)(.*)/, "$1") + "?page=app";
-                    window.location.href = appUrl;
+                    // Redirect to the main application
+                    setTimeout(() => {
+                        window.location.href = MAIN_APP_FILE;
+                    }, 1500);
                 } else {
                     statusEl.textContent = 'Access Denied: Unknown User';
                     statusEl.className = 'status-error';

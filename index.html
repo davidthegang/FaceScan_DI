@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Face Scan Login</title>
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -87,10 +87,10 @@
         // CONFIGURATION
         // ========================================================================
 
-        // 1. SET YOUR APPS SCRIPT URL (This is your deployment URL)
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnZV5fgAwvVP-PiUZrkElJJPAYXFF5r2m2dLXgEn8-Yc6CxV9NbnSUGXRul7cZ66DAFQ/exec';
+        // 1. SET YOUR APPS SCRIPT URL
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQBgktK3wFZ-hPSR4cyuHALvNVPl-4KbffI2kaiE6DGONommlO-SGc94Eaasf0wP5k/exec';
 
-        // 2. SET YOUR MODEL URL (CORRECTED for your GitHub repo)
+        // 2. SET YOUR MODEL URL (Corrected for your GitHub repo)
         const MODEL_URL = 'https://davidthegang.github.io/FaceScan_DI/weights';
 
         // 3. SET RECOGNITION THRESHOLD
@@ -233,6 +233,9 @@
 
         // Run everything
         async function init() {
+            // FIX 2: Added this line to fix WebGL / GPU crash
+            await faceapi.tf.setBackend('cpu');
+            
             await loadModels();
             await startVideo();
         }

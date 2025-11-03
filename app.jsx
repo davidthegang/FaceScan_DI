@@ -8,7 +8,8 @@ const { useState, useEffect, useRef, useMemo, useCallback } = React;
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzq6ne8SuyYpH5-pSr_xIgW2B_ziWzZTBBVkXqbD1Ehh5N4Yg39Bdzy9eGIEb6Wlsk/exec';
 const FACE_MATCH_THRESHOLD = 0.5; // Stricter verification
 const MODEL_URL = './weights';
-const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/'; // Proxy for loading admin images
+// UPDATED: Using a reliable proxy for image hosts like postimg.cc
+const PROXY_URL = 'https://corsproxy.io/?';
 
 // --- ASSET ICONS ---
 const ICONS = {
@@ -205,7 +206,8 @@ function LoginScreen({ onLoginSuccess }) {
     const prepareReferenceFace = async (admin) => {
         setStatus('កំពុងទាញទិន្នន័យមុខយោង...');
         try {
-            const imageUrl = `${CORS_PROXY}${admin.imageUrl}`;
+            // UPDATED: Use the new PROXY_URL with the image link from the sheet
+            const imageUrl = `${PROXY_URL}${encodeURIComponent(admin.imageUrl)}`;
             const referenceImage = await faceapi.fetchImage(imageUrl);
             const detection = await faceapi.detectSingleFace(referenceImage)
                 .withFaceLandmarks()
@@ -221,7 +223,7 @@ function LoginScreen({ onLoginSuccess }) {
             setReferenceDescriptor(detection.descriptor);
             setStatus('សូមដាក់មុខនៅចំកណ្តាល');
         } catch (e) {
-            setModal({ type: 'error', message: `Could not load reference image: ${e.message}`, onClose: () => {
+            setModal({ type: 'error', message: `Could not load reference image. Check image host.`, onClose: () => {
                 setModal(null);
                 handleBackToSelect();
             }});
@@ -366,7 +368,7 @@ function LoginScreen({ onLoginSuccess }) {
 
                     {view === 'camera' && (
                         <div className="flex flex-col items-center space-y-4">
-                            <div id="login-video-wrapper" className="video-container w-[90%] mx-auto aspect-square rounded-full overflow-hidden">
+                            <div id="login-video-wrapper" className="video-container w-[90%] mx-auto rounded-full overflow-hidden">
                                 <video id="login-video" ref={videoRef} autoPlay muted playsInline></video>
                                 <div className="scanner-line"></div>
                             </div>
@@ -703,7 +705,7 @@ function PageScan({ students, onRefreshData }) {
 
                 {view === 'camera' && (
                     <div className="flex flex-col items-center space-y-4">
-                        <div id="video-wrapper" className={`video-container w-[90%] mx-auto aspect-square rounded-full overflow-hidden ${cameraStatus.includes('Excellent') ? 'ready' : ''}`}>
+                        <div id="video-wrapper" className={`video-container w-[90%] mx-auto rounded-full overflow-hidden ${cameraStatus.includes('Excellent') ? 'ready' : ''}`}>
                             <video id="video" ref={videoRef} autoPlay muted playsinline></video>
                             <div className="scanner-line"></div>
                         </div>
@@ -1145,3 +1147,4 @@ function App() {
 // --- Render the App ---
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
+

@@ -6,7 +6,7 @@
     <title>ប្រព័ន្ធស្កេនមុខឌីជីថល</title>
     
     <!-- App Icon -->
-    <link rel="icon" href="https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.freepik.com%2Ffree-photos-vectors%2Fface-scan&psig=AOvVaw2ACxbXUegz-mkmBxewrf_7&ust=1762236842989000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCICI7fqp1ZADFQAAAAAdAAAAABAE" />
+    <link rel="icon" href="di_logo.png" />
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -30,25 +30,55 @@
 
     <!-- Custom CSS Styles -->
     <style>
+        :root {
+            --theme-color: #4f46e5; /* indigo */
+            --theme-color-hover: #4338ca;
+        }
+        .theme-blue { --theme-color: #3b82f6; --theme-color-hover: #2563eb; }
+        .theme-green { --theme-color: #22c55e; --theme-color-hover: #16a34a; }
+        .theme-red { --theme-color: #ef4444; --theme-color-hover: #dc2626; }
+        
         body {
             font-family: 'Kantumruy Pro', sans-serif;
             background: #0f172a;
             color: #e2e8f0;
             overflow-x: hidden;
         }
+        /* Dark mode styles */
+        .dark body { background: #0f172a; color: #e2e8f0; }
+        body:not(.dark) { background: #f1f5f9; color: #1e293b; }
+        
         .khmer-title { font-family: "Moul", serif; }
+        
         .main-content {
             background: rgba(30, 41, 59, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
         }
+        body:not(.dark) .main-content {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
         .nav-link.active {
-            background: #4f46e5;
+            background: var(--theme-color);
             color: white;
             box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
         }
-        /* Style for the select dropdown arrow */
+        .nav-link:hover {
+             background: #334155;
+        }
+        body:not(.dark) .nav-link:hover {
+            background: #e2e8f0;
+        }
+        body:not(.dark) .nav-link.active:hover {
+            background: var(--theme-color-hover);
+        }
+        .nav-link.active:hover {
+            background: var(--theme-color-hover);
+        }
+
         .filter-select {
             background-color: #E5E7EB; color: #111827;
             padding: 0.5rem 2rem 0.5rem 0.75rem; font-size: 0.875rem;
@@ -61,18 +91,18 @@
         @media (min-width: 768px) {
             .filter-select { padding: 0.6rem 2.5rem 0.6rem 1rem; font-size: 1rem; }
         }
-        /* Scrollbar styles */
+        
         ::-webkit-scrollbar { width: 8px; height: 8px;}
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        body:not(.dark) ::-webkit-scrollbar-track { background: #e2e8f0; }
+        body:not(.dark) ::-webkit-scrollbar-thumb { background: #94a3b8; }
         
-        /* Video Container Styles */
         .video-container {
             position: relative;
             border: 5px solid transparent;
             transition: all 0.4s ease;
             box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            /* Aspect ratio 1/1 for a perfect circle */
             aspect-ratio: 1 / 1; 
         }
         .video-container video {
@@ -95,9 +125,39 @@
         .video-container.ready .scanner-line, .video-container.verifying .scanner-line { opacity: 1; }
         .video-container.verifying .scanner-line { background: linear-gradient(to right, transparent, #fbbf24, transparent); box-shadow: 0 0 10px #fbbf24; }
         @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+
+        /* Theme-aware text and backgrounds */
+        .text-main { color: #e2e8f0; }
+        .text-muted { color: #94a3b8; }
+        .bg-main { background-color: #0f172a; }
+        .bg-content { background-color: #1e293b; }
+        .bg-sidebar { background-color: #1e293b; }
+        .border-main { border-color: #334155; }
+        
+        body:not(.dark) .text-main { color: #1e293b; }
+        body:not(.dark) .text-muted { color: #475569; }
+        body:not(.dark) .bg-main { background-color: #f1f5f9; }
+        body:not(.dark) .bg-content { background-color: #ffffff; }
+        body:not(.dark) .bg-sidebar { background-color: #ffffff; }
+        body:not(.dark) .border-main { border-color: #e2e8f0; }
+
+        /* Themed buttons */
+        .btn-theme {
+            background-color: var(--theme-color);
+            color: white;
+        }
+        .btn-theme:hover {
+            background-color: var(--theme-color-hover);
+        }
+        .text-theme { color: var(--theme-color); }
+        .border-theme { border-color: var(--theme-color); }
+        .ring-theme {
+             --tw-ring-color: var(--theme-color);
+        }
+        
     </style>
 </head>
-<body>
+<body class="dark"> <!-- Start in dark mode by default -->
     <!-- The React app will attach here -->
     <div id="root"></div>
     

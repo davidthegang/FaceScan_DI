@@ -1,3 +1,5 @@
+
+// Use strict mode for better error detection
 "use strict";
 
 // Import React hooks
@@ -7,9 +9,7 @@ const { useState, useEffect, useRef, useMemo, useCallback, createContext, useCon
 const SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyPBipQMaJ9d8UQg2BdVXPw6ycZHb4hxcNfiJEW4LFZvceXo62UjkDCZEP7JwqJw_4u/exec";
 const FACE_MATCH_THRESHOLD = 0.5; // Stricter verification
-const MODEL_URL = './weights/'; // Assuming weights are in 'weights' folder
-// REMOVED: Super admin logic
-// const SUPER_ADMIN_NAME = 'ពៅ ដារ៉ូ';
+const MODEL_URL = './weights'; // Assuming weights are in 'weights' folder
 
 // --- CONTEXT for Theme and Language ---
 const AppContext = createContext();
@@ -18,12 +18,7 @@ const useAppContext = () => useContext(AppContext);
 
 function AppProvider({ children }) {
     const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
-    
-    // --- THIS IS THE LANGUAGE FIX ---
-    // The app will now *always* default to Khmer on load.
-    const [lang, setLang] = useState('kh'); 
-    // --- END OF FIX ---
-    
+    const [lang, setLang] = useState('kh'); // Default to Khmer
     const [color, setColor] = useState(() => localStorage.getItem('color') || 'theme-indigo');
 
     useEffect(() => {
@@ -43,19 +38,11 @@ function AppProvider({ children }) {
         localStorage.setItem('color', color);
     }, [color]);
 
-    // This effect now just saves the language if the user changes it
     useEffect(() => {
         localStorage.setItem('lang', lang);
     }, [lang]);
 
-    const value = {
-        theme,
-        setTheme,
-        lang,
-        setLang,
-        color,
-        setColor
-    };
+    const value = { theme, setTheme, lang, setLang, color, setColor };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
@@ -67,10 +54,10 @@ const translations = {
         loginTitle: "ប្រព័ន្ធគ្រប់គ្រង",
         loginSubtitle: "សូមជ្រើសរើសឈ្មោះរបស់អ្នកដើម្បីចូល",
         selectName: "-- សូមជ្រើសរើសឈ្មោះ --",
-        continue: "បន្ត", // Added "Continue"
+        continue: "បន្ត",
         loadingAdmins: "កំពុងទាញទិន្នន័យ Admin...",
         errorLoadingAdmins: "Error loading admins",
-        loadingRefFace: "កំពុងទាញទិន្នន័យមុខយោង...",
+        loadingRefFace: "កំពុងរៀបចំកាមេរ៉ា...", // Changed this text
         verifying: "កំពុងផ្ទៀងផ្ទាត់...",
         faceNotFound: "រកមិនឃើញមុខ. សូមព្យាយាមម្តងទៀត.",
         faceNoMatch: "មុខមិនត្រឹមត្រូវ. សូមព្យាយាមម្តងទៀត.",
@@ -87,7 +74,7 @@ const translations = {
         navSettings: "ការកំណត់",
         navLogout: "ចាកចេញ",
         // Header
-        headerTitle: "ប្រព័ន្ធគ្រប់គ្រងទិន្នន័យរូបភាព",
+        headerTitle: "គ្រប់គ្រងទិន្នន័យរូបភាព",
         // Scan Page
         scanTitle: "ប្រព័ន្ធស្កេនមុខឌីជីថល",
         scanSubtitle: "សូមជ្រើសរើសអត្តលេខរបស់អ្នក",
@@ -104,8 +91,8 @@ const translations = {
         cameraStatusSuccess: "Excellent!",
         upload: "បញ្ជូនរូបភាព",
         retake: "ថតម្តងទៀត",
-        uploading: "Uploading...",
-        uploadSuccess: "Image saved successfully!",
+        uploading: "កំពុងបញ្ជូនរូបភាព...",
+        uploadSuccess: "រូបភាពបានរក្សាទុកជោគជ័យ!",
         uploadFailed: "Upload failed",
         // List Page
         listTitle: "ទិន្នន័យរូបភាពនិស្សិត",
@@ -124,11 +111,11 @@ const translations = {
         group: "ក្រុម",
         image: "រូបភាព",
         action: "កែ",
-        deleteConfirm: "Are you sure you want to delete this record?",
+        deleteConfirm: "តើអ្នកពិតជាចង់លុបរូបភាពនេះមែនទេ?",
         cancel: "Cancel",
         delete: "Delete",
-        deleting: "Deleting...",
-        deleteSuccess: "Record deleted!",
+        deleting: "កំពុងលុប...",
+        deleteSuccess: "លុបបានជោគជ៍យ!",
         deleteFailed: "Delete failed",
         // Profile Page
         profileTitle: "គណនី",
@@ -142,17 +129,16 @@ const translations = {
         light: "ពន្លឺថ្ងៃ",
         dark: "ពន្លឺយប់",
         color: "ពណ៌",
-        // REMOVED superAdmin text
     },
     en: {
         loading: "Loading system data...",
         loginTitle: "Management System",
         loginSubtitle: "Please select your name to login",
         selectName: "-- Select Name --",
-        continue: "Continue", // Added "Continue"
+        continue: "Continue",
         loadingAdmins: "Loading Admins...",
         errorLoadingAdmins: "Error loading admins",
-        loadingRefFace: "Loading reference face...",
+        loadingRefFace: "Preparing camera...", // Changed this text
         verifying: "Verifying...",
         faceNotFound: "Face not found. Please try again.",
         faceNoMatch: "Face does not match. Please try again.",
@@ -224,7 +210,6 @@ const translations = {
         light: "Light",
         dark: "Dark",
         color: "Color",
-        // REMOVED superAdmin text
     }
 };
 
@@ -427,7 +412,11 @@ function LoginScreen({ onLoginSuccess }) {
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             videoRef.current.srcObject = stream;
             videoRef.current.onloadedmetadata = () => {
-                startLoginFaceDetection();
+                // Wait for the reference face to be loaded before starting detection
+                if (referenceDescriptor) {
+                    setStatus(t('centerFace'));
+                    startLoginFaceDetection();
+                }
             };
         } catch (err) {
             setModal({ type: 'error', message: t('allowCamera'), onClose: () => {
@@ -438,7 +427,7 @@ function LoginScreen({ onLoginSuccess }) {
     };
     
     const prepareReferenceFace = async (admin) => {
-        setStatus(t('loadingRefFace')); // Set status *before* fetching
+        setStatus(t('loadingRefFace'));
         try {
             const response = await fetchData('getAdminImage', { url: admin.imageUrl });
             const dataUrl = response.data;
@@ -455,7 +444,11 @@ function LoginScreen({ onLoginSuccess }) {
                 return;
             }
             setReferenceDescriptor(detection.descriptor);
-            setStatus(t('centerFace'));
+            // If camera is already running, start detection.
+            if (videoRef.current && videoRef.current.srcObject) {
+                setStatus(t('centerFace'));
+                startLoginFaceDetection();
+            }
         } catch (e) {
             setModal({ type: 'error', message: `Could not load reference image. ${e.message}`, onClose: () => {
                 setModal(null);
@@ -488,6 +481,7 @@ function LoginScreen({ onLoginSuccess }) {
                     }, 2000);
                 }
             } else {
+                // No face detected, keep scanning
                 setStatus(t('centerFace'));
             }
         }, 1000);
@@ -814,32 +808,38 @@ function PageScan({ students, onRefreshData }) {
 
     // *** THIS IS THE FIX for black screen ***
     // This function is now called *directly* by the modal buttons.
-    const startStudentCamera = useCallback(async (mode) => {
+    const startStudentCamera = useCallback(async (mode, newFacingMode) => {
         stopStudentCamera();
-        setCameraMode(mode); // Set the mode
-        setView('camera');    // Change the view
+        const currentMode = mode || cameraMode;
+        const currentFacingMode = newFacingMode || facingMode;
+        setCameraMode(currentMode);
+        setView('camera');
         setCameraStatus('Starting camera...');
         
         try {
             // *** HD CAMERA FIX ***
-            const constraints = { video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } } };
+            const constraints = { video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } } };
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            videoRef.current.srcObject = stream;
-            videoRef.current.onloadedmetadata = () => {
-                if (mode === 'auto') {
-                    setCameraStatus(t('cameraStatusScanning'));
-                    startAutoDetection();
-                } else {
-                    setCameraStatus(t('cameraStatusReady'));
-                }
-            };
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.onloadedmetadata = () => {
+                    if (currentMode === 'auto') {
+                        setCameraStatus(t('cameraStatusScanning'));
+                        startAutoDetection();
+                    } else {
+                        setCameraStatus(t('cameraStatusReady'));
+                    }
+                };
+            } else {
+                stream.getTracks().forEach(t => t.stop());
+            }
         } catch (err) {
             setModal({ type: 'error', message: t('allowCamera'), onClose: () => {
                 setModal(null);
                 handleBackToSelect();
             }});
         }
-    }, [facingMode, stopStudentCamera, t]);
+    }, [facingMode, cameraMode, stopStudentCamera, t]); // Added cameraMode
     
     const handleSelectStudent = (student) => {
         setSelectedStudent(student);
@@ -885,29 +885,46 @@ function PageScan({ students, onRefreshData }) {
     };
 
     const handleCapture = () => {
-        stopStudentCamera();
+        // --- FIX START ---
+        // 1. Get refs
         const video = videoRef.current;
         const canvas = canvasRef.current;
+        
+        if (!video || !canvas || video.videoWidth === 0) {
+            console.error("Video not ready or not found");
+            return; // Safety check
+        }
+
         const ctx = canvas.getContext('2d');
         const size = 512;
         canvas.width = size;
         canvas.height = size;
         
+        // 2. Flip context if needed
         if (facingMode === 'user') {
             ctx.translate(size, 0);
             ctx.scale(-1, 1);
         }
         
+        // 3. Calculate cropping
         const vRatio = video.videoWidth / video.videoHeight;
         let sx=0, sy=0, sWidth=video.videoWidth, sHeight=video.videoHeight;
         if (vRatio > 1) { sWidth = sHeight; sx = (video.videoWidth - sWidth) / 2; } 
         else { sHeight = sWidth; sy = (video.videoHeight - sHeight) / 2; }
         
+        // 4. Draw the *current* video frame
         ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, size, size);
         
+        // 5. Get the data URL *before* stopping the camera
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        
+        // 6. NOW stop the camera
+        stopStudentCamera();
+        
+        // 7. Set state
         setImageData(dataUrl);
         setView('preview');
+        // --- FIX END ---
     };
 
     const handleUpload = async () => {
@@ -933,13 +950,10 @@ function PageScan({ students, onRefreshData }) {
         }
     };
     
-    // *** THIS IS THE FIX ***
-    // handleRetake now calls startStudentCamera directly.
     const handleRetake = () => {
         setImageData(null);
         setStableFrames(0);
-        // setView('camera'); // This is now set inside startStudentCamera
-        startStudentCamera(cameraMode); // Start the camera again in the same mode
+        startStudentCamera(cameraMode, facingMode); // Pass current modes
     };
 
     const handleBackToSelect = () => {
@@ -950,9 +964,12 @@ function PageScan({ students, onRefreshData }) {
         setSearchTerm('');
     };
     
-    // *** REMOVED ***
-    // The useEffect that automatically started the camera is gone.
-    // useEffect(() => { ... }, [view, startStudentCamera, stopStudentCamera]);
+    // *** CAMERA SWITCH FIX ***
+    const handleSwitchCameraClick = () => {
+        const newMode = facingMode === 'user' ? 'environment' : 'user';
+        setFacingMode(newMode);
+        startStudentCamera(cameraMode, newMode); // *Must* restart camera manually
+    };
     
     // This effect is still needed to stop the camera when leaving the page
     useEffect(() => {
@@ -1024,8 +1041,9 @@ function PageScan({ students, onRefreshData }) {
                             <div className="scanner-line"></div>
                         </div>
                         <div className="flex items-center justify-center gap-4">
+                            {/* *** CAMERA SWITCH FIX *** */}
                             <button
-                                onClick={() => setFacingMode(m => (m === 'user' ? 'environment' : 'user'))}
+                                onClick={handleSwitchCameraClick}
                                 className="w-14 h-14 bg-slate-700/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-slate-600/50 transition"
                                 title="Switch Camera"
                             >

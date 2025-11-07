@@ -1,4 +1,3 @@
-
 // Use strict mode for better error detection
 "use strict";
 
@@ -6,10 +5,9 @@
 const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
 
 // --- CONSTANTS ---
-const SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbyPBipQMaJ9d8UQg2BdVXPw6ycZHb4hxcNfiJEW4LFZvceXo62UjkDCZEP7JwqJw_4u/exec";
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyPBipQMaJ9d8UQg2BdVXPw6ycZHb4hxcNfiJEW4LFZvceXo62UjkDCZEP7JwqJw_4u/exec';
 const FACE_MATCH_THRESHOLD = 0.5; // Stricter verification
-const MODEL_URL = './weights'; // Assuming weights are in 'weights' folder
+const MODEL_URL = './weights';
 
 // --- CONTEXT for Theme and Language ---
 const AppContext = createContext();
@@ -91,8 +89,8 @@ const translations = {
         cameraStatusSuccess: "Excellent!",
         upload: "បញ្ជូនរូបភាព",
         retake: "ថតម្តងទៀត",
-        uploading: "កំពុងបញ្ជូនរូបភាព...",
-        uploadSuccess: "រូបភាពបានរក្សាទុកជោគជ័យ!",
+        uploading: "Uploading...",
+        uploadSuccess: "Image saved successfully!",
         uploadFailed: "Upload failed",
         // List Page
         listTitle: "ទិន្នន័យរូបភាពនិស្សិត",
@@ -111,11 +109,11 @@ const translations = {
         group: "ក្រុម",
         image: "រូបភាព",
         action: "កែ",
-        deleteConfirm: "តើអ្នកពិតជាចង់លុបរូបភាពនេះមែនទេ?",
+        deleteConfirm: "Are you sure you want to delete this record?",
         cancel: "Cancel",
         delete: "Delete",
-        deleting: "កំពុងលុប...",
-        deleteSuccess: "លុបបានជោគជ៍យ!",
+        deleting: "Deleting...",
+        deleteSuccess: "Record deleted!",
         deleteFailed: "Delete failed",
         // Profile Page
         profileTitle: "គណនី",
@@ -806,7 +804,7 @@ function PageScan({ students, onRefreshData }) {
         }
     }, []);
 
-    // *** THIS IS THE FIX for black screen ***
+    // *** THIS FUNCTION IS FIXED ***
     // This function is now called *directly* by the modal buttons.
     const startStudentCamera = useCallback(async (mode, newFacingMode) => {
         stopStudentCamera();
@@ -822,6 +820,9 @@ function PageScan({ students, onRefreshData }) {
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
+                // --- FIX for iOS ---
+                // Manually call play() in addition to autoPlay
+                videoRef.current.play(); 
                 videoRef.current.onloadedmetadata = () => {
                     if (currentMode === 'auto') {
                         setCameraStatus(t('cameraStatusScanning'));
@@ -873,7 +874,7 @@ function PageScan({ students, onRefreshData }) {
                     const newCount = f + 1;
                     setCameraStatus(`${t('cameraStatusSuccess')} (${newCount}/4)`);
                     if (newCount >= 4) {
-                        handleCapture();
+                        handleCapture(); // Call the fixed capture function
                     }
                     return newCount;
                 });
@@ -884,8 +885,10 @@ function PageScan({ students, onRefreshData }) {
         }, 400);
     };
 
+    //
+    // *** THIS FUNCTION IS FIXED ***
+    //
     const handleCapture = () => {
-        // --- FIX START ---
         // 1. Get refs
         const video = videoRef.current;
         const canvas = canvasRef.current;
@@ -918,13 +921,16 @@ function PageScan({ students, onRefreshData }) {
         // 5. Get the data URL *before* stopping the camera
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         
-        // 6. NOW stop the camera
-        stopStudentCamera();
-        
-        // 7. Set state
+        // 6. Set state *before* stopping camera
         setImageData(dataUrl);
         setView('preview');
-        // --- FIX END ---
+
+        // 7. NOW, stop the camera *after* a short delay
+        // This gives React time to update the state and render the <img>
+        // before the video stream is killed.
+        setTimeout(() => {
+            stopStudentCamera();
+        }, 100); 
     };
 
     const handleUpload = async () => {
